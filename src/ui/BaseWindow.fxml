@@ -59,33 +59,38 @@
                         <Insets left="10.0" right="10.0" top="10.0" />
                      </VBox.margin>
                   </TextFlow>
-                  <TextArea fx:id="textArea" editable="false" prefHeight="396.0" prefWidth="200.0" style="-fx-wrap-text: true;">
+                  <TextArea fx:id="console" editable="false" prefHeight="396.0" prefWidth="200.0" style="-fx-wrap-text: true;">
                      <VBox.margin>
                         <Insets left="10.0" right="10.0" top="10.0" />
                      </VBox.margin>
                   </TextArea>
-                  <GridPane prefHeight="240.0">
-                    <columnConstraints>
-                      <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                      <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                    </columnConstraints>
-                    <rowConstraints>
-                      <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                      <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                      <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                    </rowConstraints>
+                  <StackPane fx:id="stackPane" prefHeight="300.0" prefWidth="380.0">
+                     <children>
+                        <GridPane>
+                          <columnConstraints>
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                          </columnConstraints>
+                          <rowConstraints>
+                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                          </rowConstraints>
+                           <children>
+                              <Button fx:id="textButton" mnemonicParsing="false" onMouseClicked="#handleTextButtonClicked" prefHeight="40.0" prefWidth="120.0" text="查看源文本" textAlignment="CENTER" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
+                              <Button fx:id="showButton" mnemonicParsing="false" onMouseClicked="#handleShowButtonClicked" prefHeight="40.0" prefWidth="120.0" text="展示有向图" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
+                              <Button fx:id="queryButton" mnemonicParsing="false" onMouseClicked="#handleQueryButtonClicked" prefHeight="40.0" prefWidth="120.0" text="查询桥接词" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+                              <Button fx:id="generateButton" mnemonicParsing="false" onMouseClicked="#handleGenerateButtonClicked" prefHeight="40.0" prefWidth="120.0" text="生成新文本" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
+                              <Button fx:id="pathButton" mnemonicParsing="false" onMouseClicked="#handlePathButtonClicked" prefHeight="40.0" prefWidth="120.0" text="求最短路径" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
+                              <Button fx:id="walkButton" mnemonicParsing="false" onMouseClicked="#handleWalkButtonClicked" prefHeight="40.0" prefWidth="120.0" text="随机游走" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
+                           </children>
+                        </GridPane>
+                     </children>
                      <VBox.margin>
                         <Insets left="10.0" right="10.0" top="10.0" />
                      </VBox.margin>
-                     <children>
-                        <Button fx:id="textButton" mnemonicParsing="false" onMouseClicked="#handleTextButtonClicked" prefHeight="40.0" prefWidth="120.0" text="查看源文本" textAlignment="CENTER" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
-                        <Button fx:id="showButton" mnemonicParsing="false" onMouseClicked="#handleShowButtonClicked" prefHeight="40.0" prefWidth="120.0" text="展示有向图" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
-                        <Button fx:id="queryButton" mnemonicParsing="false" onMouseClicked="#handleQueryButtonClicked" prefHeight="40.0" prefWidth="120.0" text="查询桥接词" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
-                        <Button fx:id="generateButton" mnemonicParsing="false" onMouseClicked="#handleGenerateButtonClicked" prefHeight="40.0" prefWidth="120.0" text="生成新文本" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER" />
-                        <Button fx:id="pathButton" mnemonicParsing="false" onMouseClicked="#handlePathButtonClicked" prefHeight="40.0" prefWidth="120.0" text="求最短路径" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
-                        <Button fx:id="walkButton" mnemonicParsing="false" onMouseClicked="#handleWalkButtonClicked" prefHeight="40.0" prefWidth="120.0" text="随机游走" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
-                     </children>
-                  </GridPane>
+                  </StackPane>
                </children>
             </VBox>
          </children>

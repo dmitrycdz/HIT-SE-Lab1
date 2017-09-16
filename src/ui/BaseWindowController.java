@@ -24,6 +24,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
@@ -38,6 +39,7 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Affine;
@@ -59,7 +61,8 @@ public class BaseWindowController {
 	@FXML private Button walkButton;
 	
 	@FXML private Canvas canvas;
-	@FXML private TextArea textArea;
+	@FXML private TextArea console;
+	@FXML private StackPane stackPane;
 	
 	private DirectedGraph graph;
 	private File dataFile;
@@ -100,7 +103,7 @@ public class BaseWindowController {
 		if (dataFile != null) {
 			try (Scanner scan = new Scanner(dataFile)) {
 				String content = scan.useDelimiter("\\Z").next();
-				textArea.setText(content);
+				console.setText(content);
 			} catch (FileNotFoundException err) {
 				err.printStackTrace();
 			}
@@ -110,7 +113,7 @@ public class BaseWindowController {
 	@FXML
 	protected void handleShowButtonClicked(MouseEvent e) {
 		if (this.graph == null) {
-			textArea.setText("请先打开文本以生成有向图！");
+			console.setText("请先打开文本以生成有向图！");
 			return;
 		}
 		points.clear();
@@ -122,20 +125,79 @@ public class BaseWindowController {
 	
 	@FXML
 	protected void handleQueryButtonClicked(MouseEvent e) throws Exception {
+		/*
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("QueryWindow.fxml"));
-		Stage stage= new Stage();
+		Stage stage = new Stage();
 		stage.setScene(new Scene((Pane)loader.load()));
 		QueryWindowController controller = loader.<QueryWindowController>getController();
 		controller.initGraph(graph);
 		stage.setTitle("查询桥接词");
 		stage.setResizable(false);
 		stage.show();
+		*/
+		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("QueryWindow.fxml"));
+		GridPane pane = (GridPane)loader.load();
+		TextField word1TF = (TextField)loader.getNamespace().get("word1TextField");
+		TextField word2TF = (TextField)loader.getNamespace().get("word2TextField");
+		Button returnBT = (Button)loader.getNamespace().get("returnButton");
+		Button queryBT = (Button)loader.getNamespace().get("queryButton");
+		returnBT.setOnMouseClicked(event -> {
+			stackPane.getChildren().remove(pane);
+			stackPane.getChildren().add(prePane);
+		});
+		queryBT.setOnMouseClicked(event -> {
+			String word1 = word1TF.getText();
+			String word2 = word2TF.getText();
+			if (word1.equals("") && !word2.equals("")) {
+				console.setText("请输入单词1！");
+				return;
+			} else if (!word1.equals("") && word2.equals("")) {
+				console.setText("请输入单词2！");
+				return;
+			} else if (word1.equals("") && word2.equals("")) {
+				console.setText("请输入单词1和单词2！");
+				return;
+			} else {
+				String output = queryBridgeWords(word1, word2);
+				console.setText(output);
+			}
+		});
+		stackPane.getChildren().remove(prePane);
+		stackPane.getChildren().add(pane);
+	}
+	
+	private String queryBridgeWords(String word1, String word2) {
+		ArrayList<Vertex> vertices = this.graph.getVertices();
+		Vertex a = null;
+		Vertex b = null;
+		for (Vertex v : vertices) {
+			if (v.name.equals(word1)) {
+				a = v;
+			}
+			if (v.name.equals(word2)) {
+				b = v;
+			}
+		}
+		if (a == null || b == null) {
+			return "No word1 or word2 in the graph!";
+		}
+		HashSet<Vertex> successors = a.successors;
+		HashSet<Vertex> predecessors = b.predecessors;
+		HashSet<Vertex> intersection = new HashSet<>();
+		intersection.addAll(successors);
+		intersection.retainAll(predecessors);
+		if (intersection.size() == 0) {
+			return "No bridge words from word1 to word2!";
+		}
+		String wordsName = intersection.toString();
+		return "The bridge words from word1 to word2 are: " + wordsName.substring(1, wordsName.length() - 1) + ".";
 	}
 	
 	@FXML
 	protected void handleGenerateButtonClicked(MouseEvent e) throws Exception {
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("GenerateWindow.fxml"));
-		Stage stage= new Stage();
+		Stage stage = new Stage();
 		stage.setScene(new Scene((Pane)loader.load()));
 		GenerateWindowController controller = loader.<GenerateWindowController>getController();
 		controller.initGraph(graph);
@@ -339,7 +401,7 @@ public class BaseWindowController {
 		if (file != null) {
 			try (Scanner scan = new Scanner(file)) {
 				String content = scan.useDelimiter("\\Z").next();
-				textArea.setText(content);
+				console.setText(content);
 				graph = GraphProcessor.generateGraph(file.getAbsolutePath());
 			} catch (FileNotFoundException err) {
 				err.printStackTrace();
