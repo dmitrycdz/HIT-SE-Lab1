@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.GenerateWindowController">
+   <children>
+      <Label layoutX="120.0" layoutY="85.0" text="请输入文本：" />
+      <TextField fx:id="textField" layoutX="120.0" layoutY="114.0" prefWidth="360.0" />
+      <TextArea fx:id="textArea" editable="false" layoutX="120.0" layoutY="165.0" prefHeight="120.0" prefWidth="360.0" />
+      <Button fx:id="button" layoutX="380.0" layoutY="304.0" mnemonicParsing="false" onMouseClicked="#handleGenerateButtonClicked" prefWidth="100.0" text="生成新文本" />
+   </children>
+</AnchorPane>
