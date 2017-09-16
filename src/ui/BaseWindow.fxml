@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.effect.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.canvas.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.BaseWindowController">
+   <children>
+      <MenuBar fx:id="menuBar">
+        <menus>
+          <Menu mnemonicParsing="false" text="文件">
+            <items>
+              <MenuItem fx:id="openMenuItem" mnemonicParsing="false" onAction="#handleOpenMenuItemClicked" text="打开" />
+                  <MenuItem fx:id="saveMenuItem" mnemonicParsing="false" onAction="#handleSaveMenuItemClicked" text="另存为" />
+                  <MenuItem fx:id="closeMenuItem" mnemonicParsing="false" onAction="#handleCloseMenuItemClicked" text="关闭" />
+            </items>
+          </Menu>
+          <Menu mnemonicParsing="false" text="功能">
+            <items>
+              <MenuItem fx:id="showMenuItem" mnemonicParsing="false" onAction="#handleShowMenuItemClicked" text="展示有向图" />
+                  <MenuItem fx:id="queryMenuItem" mnemonicParsing="false" onAction="#handleQueryMenuItemClicked" text="查询桥接词" />
+                  <MenuItem fx:id="generateMenuItem" mnemonicParsing="false" onAction="#handleGenerateMenuItemClicked" text="生成新文本" />
+                  <MenuItem fx:id="pathMenuItem" mnemonicParsing="false" onAction="#handlePathMenuItemClicked" text="求最短路径" />
+                  <MenuItem fx:id="walkMenuItem" mnemonicParsing="false" onAction="#handleWalkMenuItemClicked" text="随机游走" />
+            </items>
+          </Menu>
+        </menus>
+      </MenuBar>
+      <HBox prefHeight="1000.0" prefWidth="200.0">
+         <children>
+            <StackPane maxHeight="-Infinity" minHeight="-Infinity" prefHeight="748.0" prefWidth="780.0" style="-fx-background-color: #F0F0F0; -fx-border-color: darkgray;">
+               <children>
+                  <Canvas fx:id="canvas" height="748.0" width="780.0">
+                     <StackPane.margin>
+                        <Insets />
+                     </StackPane.margin>
+                  </Canvas>
+               </children>
+               <HBox.margin>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </HBox.margin>
+            </StackPane>
+            <VBox prefHeight="200.0" prefWidth="400.0">
+               <children>
+                  <TextFlow maxHeight="-Infinity" minHeight="-Infinity" prefHeight="32.0" prefWidth="200.0" style="-fx-background-color: #F0F0F0; -fx-border-color: darkgray;" textAlignment="CENTER">
+                     <children>
+                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="文本内容" textAlignment="CENTER">
+                           <font>
+                              <Font name="Microsoft YaHei" size="16.0" />
+                           </font>
+                        </Text>
+                     </children>
+                     <padding>
+                        <Insets top="5.0" />
+                     </padding>
+                     <VBox.margin>
+                        <Insets left="10.0" right="10.0" top="10.0" />
+                     </VBox.margin>
+                  </TextFlow>
+                  <TextArea fx:id="textArea" editable="false" prefHeight="706.0" prefWidth="200.0" style="-fx-wrap-text: true;">
+                     <VBox.margin>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                     </VBox.margin>
+                  </TextArea>
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+   </children>
+</VBox>
