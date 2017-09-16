@@ -35,6 +35,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -49,19 +50,23 @@ public class BaseWindowController {
 	@FXML private MenuItem openMenuItem;
 	@FXML private MenuItem saveMenuItem;
 	@FXML private MenuItem closeMenuItem;
-	@FXML private MenuItem showMenuItem;
-	@FXML private MenuItem queryMenuItem;
-	@FXML private MenuItem generateMenuItem;
-	@FXML private MenuItem pathMenuItem;
-	@FXML private MenuItem walkMenuItem;
+	
+	@FXML private Button textButton;
+	@FXML private Button showButton;
+	@FXML private Button queryButton;
+	@FXML private Button generateButton;
+	@FXML private Button pathButton;
+	@FXML private Button walkButton;
+	
 	@FXML private Canvas canvas;
 	@FXML private TextArea textArea;
 	
 	private DirectedGraph graph;
+	private File dataFile;
 	
 	private static HashMap<String, double[]> points = new HashMap<>();
 	private static final double radius = 25;
-	private final int arrow_size = 8;
+	private static final int arrow_size = 8;
 	private static Vertex[][] path;
 	private static int[][] distance;
 	private static final int infinity = Integer.MAX_VALUE / 2;
@@ -70,11 +75,12 @@ public class BaseWindowController {
 	protected void handleOpenMenuItemClicked(ActionEvent e) {
 		openFile();
 		if (graph != null) {
-			showMenuItem.setDisable(false);
-			queryMenuItem.setDisable(false);
-			generateMenuItem.setDisable(false);
-			pathMenuItem.setDisable(false);
-			walkMenuItem.setDisable(false);
+			textButton.setDisable(false);
+			showButton.setDisable(false);
+			queryButton.setDisable(false);
+			generateButton.setDisable(false);
+			pathButton.setDisable(false);
+			walkButton.setDisable(false);
 		}
 	}
 	
@@ -90,7 +96,19 @@ public class BaseWindowController {
 	}
 	
 	@FXML
-	protected void handleShowMenuItemClicked(ActionEvent e) {
+	protected void handleTextButtonClicked(MouseEvent e) {
+		if (dataFile != null) {
+			try (Scanner scan = new Scanner(dataFile)) {
+				String content = scan.useDelimiter("\\Z").next();
+				textArea.setText(content);
+			} catch (FileNotFoundException err) {
+				err.printStackTrace();
+			}
+		}
+	}
+	
+	@FXML
+	protected void handleShowButtonClicked(MouseEvent e) {
 		if (this.graph == null) {
 			textArea.setText("请先打开文本以生成有向图！");
 			return;
@@ -103,7 +121,7 @@ public class BaseWindowController {
 	}
 	
 	@FXML
-	protected void handleQueryMenuItemClicked(ActionEvent e) throws Exception {
+	protected void handleQueryButtonClicked(MouseEvent e) throws Exception {
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("QueryWindow.fxml"));
 		Stage stage= new Stage();
 		stage.setScene(new Scene((Pane)loader.load()));
@@ -115,7 +133,7 @@ public class BaseWindowController {
 	}
 	
 	@FXML
-	protected void handleGenerateMenuItemClicked(ActionEvent e) throws Exception {
+	protected void handleGenerateButtonClicked(MouseEvent e) throws Exception {
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("GenerateWindow.fxml"));
 		Stage stage= new Stage();
 		stage.setScene(new Scene((Pane)loader.load()));
@@ -127,7 +145,7 @@ public class BaseWindowController {
 	}
 	
 	@FXML
-	protected void handlePathMenuItemClicked(ActionEvent e) {
+	protected void handlePathButtonClicked(MouseEvent e) {
 		floyd();
 		Stage stage = new Stage();
 		GridPane pane = new GridPane();
@@ -159,7 +177,7 @@ public class BaseWindowController {
 	}
 	
 	@FXML
-	protected void handleWalkMenuItemClicked(ActionEvent e) {
+	protected void handleWalkButtonClicked(MouseEvent e) {
 		String text = randomWalk();
 		Stage stage = new Stage();
 		GridPane pane = new GridPane();
@@ -317,6 +335,7 @@ public class BaseWindowController {
 				new FileChooser.ExtensionFilter("文本文档", "*.txt"), 
 				new FileChooser.ExtensionFilter("所有文件", "*.*"));
 		File file = fileChooser.showOpenDialog(stage);
+		dataFile = file;
 		if (file != null) {
 			try (Scanner scan = new Scanner(file)) {
 				String content = scan.useDelimiter("\\Z").next();
