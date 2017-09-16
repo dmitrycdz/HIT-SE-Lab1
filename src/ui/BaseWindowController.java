@@ -24,7 +24,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
@@ -38,7 +37,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
@@ -125,18 +123,8 @@ public class BaseWindowController {
 	
 	@FXML
 	protected void handleQueryButtonClicked(MouseEvent e) throws Exception {
-		/*
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("QueryWindow.fxml"));
-		Stage stage = new Stage();
-		stage.setScene(new Scene((Pane)loader.load()));
-		QueryWindowController controller = loader.<QueryWindowController>getController();
-		controller.initGraph(graph);
-		stage.setTitle("查询桥接词");
-		stage.setResizable(false);
-		stage.show();
-		*/
 		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("QueryWindow.fxml"));
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("QueryPane.fxml"));
 		GridPane pane = (GridPane)loader.load();
 		TextField word1TF = (TextField)loader.getNamespace().get("word1TextField");
 		TextField word2TF = (TextField)loader.getNamespace().get("word2TextField");
@@ -167,43 +155,29 @@ public class BaseWindowController {
 		stackPane.getChildren().add(pane);
 	}
 	
-	private String queryBridgeWords(String word1, String word2) {
-		ArrayList<Vertex> vertices = this.graph.getVertices();
-		Vertex a = null;
-		Vertex b = null;
-		for (Vertex v : vertices) {
-			if (v.name.equals(word1)) {
-				a = v;
-			}
-			if (v.name.equals(word2)) {
-				b = v;
-			}
-		}
-		if (a == null || b == null) {
-			return "No word1 or word2 in the graph!";
-		}
-		HashSet<Vertex> successors = a.successors;
-		HashSet<Vertex> predecessors = b.predecessors;
-		HashSet<Vertex> intersection = new HashSet<>();
-		intersection.addAll(successors);
-		intersection.retainAll(predecessors);
-		if (intersection.size() == 0) {
-			return "No bridge words from word1 to word2!";
-		}
-		String wordsName = intersection.toString();
-		return "The bridge words from word1 to word2 are: " + wordsName.substring(1, wordsName.length() - 1) + ".";
-	}
-	
 	@FXML
 	protected void handleGenerateButtonClicked(MouseEvent e) throws Exception {
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("GenerateWindow.fxml"));
-		Stage stage = new Stage();
-		stage.setScene(new Scene((Pane)loader.load()));
-		GenerateWindowController controller = loader.<GenerateWindowController>getController();
-		controller.initGraph(graph);
-		stage.setTitle("生成新文本");
-		stage.setResizable(false);
-		stage.show();
+		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("GeneratePane.fxml"));
+		GridPane pane = (GridPane)loader.load();
+		TextField inputTF = (TextField)loader.getNamespace().get("inputTextField");
+		Button returnBT = (Button)loader.getNamespace().get("returnButton");
+		Button generateBT = (Button)loader.getNamespace().get("generateButton");
+		returnBT.setOnMouseClicked(event -> {
+			stackPane.getChildren().remove(pane);
+			stackPane.getChildren().add(prePane);
+		});
+		generateBT.setOnMouseClicked(event -> {
+			String inputText = inputTF.getText();
+			if (inputText.equals("")) {
+				console.setText("请输入新文本！");
+				return;
+			}
+			String newText = generateNewText(inputText);
+			console.setText(newText);
+		});
+		stackPane.getChildren().remove(prePane);
+		stackPane.getChildren().add(pane);
 	}
 	
 	@FXML
@@ -295,6 +269,82 @@ public class BaseWindowController {
 				}
 			}
 		}
+	}
+	
+	private String queryBridgeWords(String word1, String word2) {
+		ArrayList<Vertex> vertices = this.graph.getVertices();
+		Vertex a = null;
+		Vertex b = null;
+		for (Vertex v : vertices) {
+			if (v.name.equals(word1)) {
+				a = v;
+			}
+			if (v.name.equals(word2)) {
+				b = v;
+			}
+		}
+		if (a == null || b == null) {
+			return "No word1 or word2 in the graph!";
+		}
+		HashSet<Vertex> successors = a.successors;
+		HashSet<Vertex> predecessors = b.predecessors;
+		HashSet<Vertex> intersection = new HashSet<>();
+		intersection.addAll(successors);
+		intersection.retainAll(predecessors);
+		if (intersection.size() == 0) {
+			return "No bridge words from word1 to word2!";
+		}
+		String wordsName = intersection.toString();
+		return "The bridge words from word1 to word2 are: " + wordsName.substring(1, wordsName.length() - 1) + ".";
+	}
+	
+	private String generateNewText(String inputText) {
+		String pre, post;
+		Scanner scan = new Scanner(inputText);
+		StringBuffer sb = new StringBuffer(inputText);
+		HashSet<Vertex> bridgeWords = new HashSet<>();
+		int fromIndex = 0;
+		do {
+			pre = GraphProcessor.parseText(scan.next());
+		} while (pre == null && scan.hasNext());
+		while (scan.hasNext()) {
+			post = GraphProcessor.parseText(scan.next());
+			if (post != null) {
+				bridgeWords = getBridgeWords(pre, post);
+				Vertex insertVertex = randomSelect(bridgeWords);
+				int insertIndex = sb.indexOf(post, fromIndex);
+				if (insertVertex != null) {
+					sb.insert(insertIndex, insertVertex.name + " ");
+					fromIndex = insertIndex + insertVertex.name.length() + 1;
+				}
+				pre = post;
+			}
+		}
+		scan.close();
+		return sb.toString();
+	}
+	
+	private HashSet<Vertex> getBridgeWords(String word1, String word2) {
+		ArrayList<Vertex> vertices = this.graph.getVertices();
+		Vertex a = null;
+		Vertex b = null;
+		for (Vertex v : vertices) {
+			if (v.name.equals(word1)) {
+				a = v;
+			}
+			if (v.name.equals(word2)) {
+				b = v;
+			}
+		}
+		if (a == null || b == null) {
+			return null;
+		}
+		HashSet<Vertex> successors = a.successors;
+		HashSet<Vertex> predecessors = b.predecessors;
+		HashSet<Vertex> intersection = new HashSet<>();
+		intersection.addAll(successors);
+		intersection.retainAll(predecessors);
+		return (intersection.size() == 0)? null : intersection;
 	}
 	
 	private String calcShortestPath(String beginName, String endName) {
