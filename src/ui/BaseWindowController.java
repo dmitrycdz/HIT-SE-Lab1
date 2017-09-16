@@ -22,14 +22,11 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.HPos;
 import javafx.geometry.VPos;
-import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
@@ -74,7 +71,25 @@ public class BaseWindowController {
 	
 	@FXML
 	protected void handleOpenMenuItemClicked(ActionEvent e) {
-		openFile();
+		Stage stage = (Stage)menuBar.getScene().getWindow();
+		FileChooser fileChooser = new FileChooser();
+		
+		fileChooser.setTitle("打开文件");
+		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		fileChooser.getExtensionFilters().addAll(
+				new FileChooser.ExtensionFilter("文本文档", "*.txt"), 
+				new FileChooser.ExtensionFilter("所有文件", "*.*"));
+		File file = fileChooser.showOpenDialog(stage);
+		dataFile = file;
+		if (file != null) {
+			try (Scanner scan = new Scanner(file)) {
+				String content = scan.useDelimiter("\\Z").next();
+				console.setText(content);
+				graph = GraphProcessor.generateGraph(file.getAbsolutePath());
+			} catch (FileNotFoundException err) {
+				err.printStackTrace();
+			}
+		}
 		if (graph != null) {
 			textButton.setDisable(false);
 			showButton.setDisable(false);
@@ -87,7 +102,44 @@ public class BaseWindowController {
 	
 	@FXML
 	protected void handleSaveMenuItemClicked(ActionEvent e) {
-		saveImage();
+		Stage stage = (Stage)menuBar.getScene().getWindow();
+		FileChooser fileChooser = new FileChooser();
+		
+		fileChooser.setTitle("保存图片");
+		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		fileChooser.getExtensionFilters().addAll(
+				new FileChooser.ExtensionFilter("PNG图像", "*.png"),
+				new FileChooser.ExtensionFilter("JPG图像", "*.jpg"),
+				new FileChooser.ExtensionFilter("GIF图像", "*.gif"));
+		File file = fileChooser.showSaveDialog(stage);
+		if (file != null) {
+			String name = file.getName();
+			String extendName = name.substring(name.lastIndexOf('.') + 1);
+			WritableImage image = new WritableImage((int)canvas.getWidth(), (int)canvas.getHeight());
+			try {
+				switch(extendName) {
+				case "png":
+					SnapshotParameters spPNG = new SnapshotParameters();
+				    spPNG.setFill(Color.WHITE);
+					ImageIO.write(SwingFXUtils.fromFXImage(canvas.snapshot(spPNG, image), null), "png", file);
+					break;
+				case "jpg":
+					SnapshotParameters spJPG = new SnapshotParameters();
+				    spJPG.setFill(Color.WHITE);
+					ImageIO.write(SwingFXUtils.fromFXImage(canvas.snapshot(spJPG, image), null), "jpg", file);
+					break;
+				case "gif":
+					SnapshotParameters spGIF = new SnapshotParameters();
+				    spGIF.setFill(Color.WHITE);
+					ImageIO.write(SwingFXUtils.fromFXImage(canvas.snapshot(spGIF, image), null), "gif", file);
+					break;
+				default:
+					break;
+				}
+			} catch (IOException err) {
+				err.printStackTrace();
+			}
+		}
 	}
 	
 	@FXML
@@ -181,51 +233,48 @@ public class BaseWindowController {
 	}
 	
 	@FXML
-	protected void handlePathButtonClicked(MouseEvent e) {
+	protected void handlePathButtonClicked(MouseEvent e) throws Exception {
 		floyd();
-		Stage stage = new Stage();
-		GridPane pane = new GridPane();
-		Scene scene = new Scene(pane);
-		stage.setHeight(200);
-		stage.setWidth(300);
-		Label label1 = new Label("请输入单词1：");
-		Label label2 = new Label("请输入单词2：");
-		TextField word1TextField = new TextField();
-		TextField word2TextField = new TextField();
-		Button button = new Button("确定");
-		pane.getChildren().addAll(label1, label2, word1TextField, word2TextField, button);
-		pane.setVgap(20);
-		GridPane.setConstraints(label1, 0, 0, 1, 1, HPos.RIGHT, VPos.CENTER);
-		GridPane.setConstraints(label2, 0, 1, 1, 1, HPos.RIGHT, VPos.CENTER);
-		GridPane.setConstraints(word1TextField, 1, 0, 1, 1, HPos.LEFT, VPos.CENTER);
-		GridPane.setConstraints(word2TextField, 1, 1, 1, 1, HPos.LEFT, VPos.CENTER);
-		GridPane.setConstraints(button, 1, 2, 2, 1, HPos.CENTER, VPos.CENTER);
-		button.setOnMouseClicked((event) -> {
-			String word1 = word1TextField.getText();
-			String word2 = word2TextField.getText();
-			calcShortestPath(word1, word2);
-			stage.close();
+		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("PathPane.fxml"));
+		GridPane pane = (GridPane)loader.load();
+		TextField word1TF = (TextField)loader.getNamespace().get("word1TextField");
+		TextField word2TF = (TextField)loader.getNamespace().get("word2TextField");
+		Button returnBT = (Button)loader.getNamespace().get("returnButton");
+		Button yesBT = (Button)loader.getNamespace().get("yesButton");
+		returnBT.setOnMouseClicked(event -> {
+			stackPane.getChildren().remove(pane);
+			stackPane.getChildren().add(prePane);
 		});
-		stage.setScene(scene);;
-		stage.setTitle("求最短路径");
-		stage.setResizable(false);
-		stage.show();
+		yesBT.setOnMouseClicked(event -> {
+			String word1 = word1TF.getText();
+			String word2 = word2TF.getText();
+			String result = calcShortestPath(word1, word2);
+			console.setText(result);
+		});
+		stackPane.getChildren().remove(prePane);
+		stackPane.getChildren().add(pane);
 	}
 	
 	@FXML
-	protected void handleWalkButtonClicked(MouseEvent e) {
+	protected void handleWalkButtonClicked(MouseEvent e) throws Exception {
 		String text = randomWalk();
-		Stage stage = new Stage();
-		GridPane pane = new GridPane();
-		Scene scene = new Scene(pane);
-		Label label = new Label();
-		Button button = new Button("保存");
-		button.setOnMouseClicked((event) -> {
+		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("WalkPane.fxml"));
+		GridPane pane = (GridPane)loader.load();
+		TextArea resultTA = (TextArea)loader.getNamespace().get("resultTextArea");
+		Button returnBT = (Button)loader.getNamespace().get("returnButton");
+		Button saveBT = (Button)loader.getNamespace().get("saveButton");
+		returnBT.setOnMouseClicked(event -> {
+			stackPane.getChildren().remove(pane);
+			stackPane.getChildren().add(prePane);
+		});
+		saveBT.setOnMouseClicked((event) -> {
 			FileChooser fileChooser = new FileChooser();
 			fileChooser.setTitle("保存文本");
 			fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
 			fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("文本文档", "*.txt"));
-			File file = fileChooser.showSaveDialog(stage);
+			File file = fileChooser.showSaveDialog((Stage)menuBar.getScene().getWindow());
 			if (file != null) {
 				try (FileWriter writer = new FileWriter(file)) {
 					writer.write(text);
@@ -235,40 +284,107 @@ public class BaseWindowController {
 				}
 			}
 		});
-		label.setText(text);
-		pane.getChildren().addAll(label, button);
-		GridPane.setConstraints(label, 0, 0, 1, 1, HPos.CENTER, VPos.CENTER);
-		GridPane.setConstraints(button, 0, 1, 1, 1, HPos.CENTER, VPos.CENTER);
-		stage.setScene(scene);
-		stage.setTitle("随机游走结果");
-		stage.show();
+		resultTA.setText(text);
+		stackPane.getChildren().remove(prePane);
+		stackPane.getChildren().add(pane);
 	}
 	
-	private void floyd() {
-		int vNum = graph.getVertexNumber();
-		ArrayList<Vertex> vertices = graph.getVertices();
-		HashSet<Vertex> successors = null;
-		HashMap<Vertex, Integer> weights = null;
-		path = new Vertex[vNum][vNum];
-		distance = new int[vNum][vNum];
-		for (int i = 0; i < vNum; ++i) {
-			for (int j = 0; j < vNum; ++j) {
-				successors = vertices.get(i).successors;
-				weights = vertices.get(i).weights;
-				path[i][j] = null;
-				distance[i][j] = successors.contains(vertices.get(j)) ? weights.get(vertices.get(j)) : infinity;
+	private void showDirectedGraph() {
+		GraphicsContext gc = canvas.getGraphicsContext2D();
+		gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+		Random random = new Random();
+		int canvasWidth = (int)canvas.getWidth();
+		int canvasHeight = (int)canvas.getHeight();
+		ArrayList<Vertex> vertices = this.graph.getVertices();
+		double beginX, beginY, endX, endY;
+		
+		gc.setTextBaseline(VPos.CENTER);
+		gc.setTextAlign(TextAlignment.CENTER);
+		for (Vertex v : vertices) {
+			if (!points.keySet().contains(v.name)) {
+				do {
+					beginX = (double)random.nextInt(canvasWidth);
+					beginY = (double)random.nextInt(canvasHeight);
+				} while (!isGoodCircleCenter(beginX, beginY));
+				double[] position = new double[2];
+				position[0] = beginX;
+				position[1] = beginY;
+				points.put(v.name, position);
+				gc.setLineWidth(1);
+				gc.setStroke(Color.BLUE);
+				gc.strokeText(v.name, beginX, beginY, radius * 2);
+				gc.setStroke(Color.BLACK);
+				gc.strokeOval(beginX - radius, beginY - radius, radius * 2, radius * 2);
+			} else {
+				beginX = points.get(v.name)[0];
+				beginY = points.get(v.name)[1];
+			}
+			for (Vertex e : v.successors) {
+				if (!points.keySet().contains(e.name)) {
+					do {
+						endX = (double)random.nextInt(canvasWidth);
+						endY = (double)random.nextInt(canvasHeight);
+					} while(!isGoodCircleCenter(endX, endY));
+					double[] position = new double[2];
+					position[0] = endX;
+					position[1] = endY;
+					points.put(e.name, position);
+					gc.setLineWidth(1);
+					gc.setStroke(Color.BLUE);
+					gc.strokeText(e.name, endX, endY, radius * 2);
+					gc.setStroke(Color.BLACK);
+					gc.strokeOval(endX - radius, endY - radius, radius * 2, radius * 2);
+				} else {
+					endX = points.get(e.name)[0];
+					endY = points.get(e.name)[1];
+				}
+				drawEdge(beginX, beginY, endX, endY, v.weights.get(e), 1, Color.GREEN);
 			}
 		}
-		for (int k = 0; k < vNum; ++k) {
-			for (int i = 0; i < vNum; ++i) {
-				for (int j = 0; j < vNum; ++j) {
-					if (distance[i][k] + distance[k][j] < distance[i][j]) {
-						distance[i][j] = distance[i][k] + distance[k][j];
-						path[i][j] = vertices.get(k);
-					}
+	}
+	
+	private boolean isGoodCircleCenter(double x, double y) {
+		if (x <= radius*2|| x >= canvas.getWidth() - radius*2|| y <= radius*2 || y >= canvas.getHeight() - radius*2) {
+			return false;
+		} else {
+			for (String point : points.keySet()) {
+				double a = points.get(point)[0];
+				double b = points.get(point)[1];
+				if (Math.pow(a - x, 2) + Math.pow(b - y, 2) <= Math.pow(radius * 2, 2)) {
+					return false;
 				}
 			}
 		}
+		return true;
+	}
+	
+	private void drawEdge(double beginX, double beginY, double endX, double endY, int weight, double width, Color color) {
+		double dx = endX - beginX;
+		double dy= endY - beginY;
+		double ds = Math.sqrt(dx * dx + dy * dy);
+		double sin = dy / ds;
+		double cos = dx / ds;
+		double middleX = (beginX + endX) / 2;
+		double middleY = (beginY + endY) / 2;
+		double realBeginX = beginX + radius * cos;
+		double realBeginY = beginY + radius * sin;
+		double realEndX = endX - radius * cos;
+		double realEndY = endY - radius * sin;
+		GraphicsContext gc = canvas.getGraphicsContext2D();
+		gc.setLineWidth(width);
+		gc.setStroke(color);
+		gc.strokeLine(realBeginX, realBeginY, realEndX, realEndY);
+		gc.strokeText(String.valueOf(weight), middleX, middleY);
+		
+	    double angle = Math.atan2(dy, dx);
+	    double rdx = realEndX - realBeginX;
+	    double rdy = realEndY - realBeginY;
+	    int len = (int) Math.sqrt(rdx * rdx + rdy * rdy);
+	    Transform transform = Transform.translate(realBeginX, realBeginY);
+	    transform = transform.createConcatenation(Transform.rotate(Math.toDegrees(angle), 0, 0));
+	    gc.setTransform(new Affine(transform));
+	    gc.fillPolygon(new double[]{len, len - arrow_size, len - arrow_size, len}, new double[]{0, - arrow_size / 2, arrow_size / 2, 0}, 4);
+	    gc.setTransform(new Affine());
 	}
 	
 	private String queryBridgeWords(String word1, String word2) {
@@ -386,6 +502,33 @@ public class BaseWindowController {
 		return "The length of the shortest path is " + distance[i][j];
 	}
 	
+	private void floyd() {
+		int vNum = graph.getVertexNumber();
+		ArrayList<Vertex> vertices = graph.getVertices();
+		HashSet<Vertex> successors = null;
+		HashMap<Vertex, Integer> weights = null;
+		path = new Vertex[vNum][vNum];
+		distance = new int[vNum][vNum];
+		for (int i = 0; i < vNum; ++i) {
+			for (int j = 0; j < vNum; ++j) {
+				successors = vertices.get(i).successors;
+				weights = vertices.get(i).weights;
+				path[i][j] = null;
+				distance[i][j] = successors.contains(vertices.get(j)) ? weights.get(vertices.get(j)) : infinity;
+			}
+		}
+		for (int k = 0; k < vNum; ++k) {
+			for (int i = 0; i < vNum; ++i) {
+				for (int j = 0; j < vNum; ++j) {
+					if (distance[i][k] + distance[k][j] < distance[i][j]) {
+						distance[i][j] = distance[i][k] + distance[k][j];
+						path[i][j] = vertices.get(k);
+					}
+				}
+			}
+		}
+	}
+	
 	private void showPath(Vertex begin, Vertex end) {
 		double beginX = points.get(begin.name)[0];
 		double beginY = points.get(begin.name)[1];
@@ -402,13 +545,11 @@ public class BaseWindowController {
 			walkedVertices.put(v, new HashSet<>());
 		}
 		Vertex pre = vertices.get(new Random().nextInt(vertices.size()));
-		System.out.println(pre);
 		Vertex next = null;
 		StringBuffer sb = new StringBuffer();
 		sb.append(pre.name);
 		while (true) {
 			next = randomSelect(pre.successors);
-			System.out.println(next);
 			if (next == null) {
 				break;
 			}
@@ -435,166 +576,5 @@ public class BaseWindowController {
 			++i;
 		}
 		return null;
-	}
-	
-	private void openFile() {
-		Stage stage = (Stage)menuBar.getScene().getWindow();
-		FileChooser fileChooser = new FileChooser();
-		
-		fileChooser.setTitle("打开文件");
-		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-		fileChooser.getExtensionFilters().addAll(
-				new FileChooser.ExtensionFilter("文本文档", "*.txt"), 
-				new FileChooser.ExtensionFilter("所有文件", "*.*"));
-		File file = fileChooser.showOpenDialog(stage);
-		dataFile = file;
-		if (file != null) {
-			try (Scanner scan = new Scanner(file)) {
-				String content = scan.useDelimiter("\\Z").next();
-				console.setText(content);
-				graph = GraphProcessor.generateGraph(file.getAbsolutePath());
-			} catch (FileNotFoundException err) {
-				err.printStackTrace();
-			}
-		}
-	}
-	
-	private void saveImage() {
-		Stage stage = (Stage)menuBar.getScene().getWindow();
-		FileChooser fileChooser = new FileChooser();
-		
-		fileChooser.setTitle("保存图片");
-		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-		fileChooser.getExtensionFilters().addAll(
-				new FileChooser.ExtensionFilter("PNG图像", "*.png"),
-				new FileChooser.ExtensionFilter("JPG图像", "*.jpg"),
-				new FileChooser.ExtensionFilter("GIF图像", "*.gif"));
-		File file = fileChooser.showSaveDialog(stage);
-		if (file != null) {
-			String name = file.getName();
-			String extendName = name.substring(name.lastIndexOf('.') + 1);
-			WritableImage image = new WritableImage((int)canvas.getWidth(), (int)canvas.getHeight());
-			try {
-				switch(extendName) {
-				case "png":
-					SnapshotParameters spPNG = new SnapshotParameters();
-				    spPNG.setFill(Color.WHITE);
-					ImageIO.write(SwingFXUtils.fromFXImage(canvas.snapshot(spPNG, image), null), "png", file);
-					break;
-				case "jpg":
-					SnapshotParameters spJPG = new SnapshotParameters();
-				    spJPG.setFill(Color.WHITE);
-					ImageIO.write(SwingFXUtils.fromFXImage(canvas.snapshot(spJPG, image), null), "jpg", file);
-					break;
-				case "gif":
-					SnapshotParameters spGIF = new SnapshotParameters();
-				    spGIF.setFill(Color.WHITE);
-					ImageIO.write(SwingFXUtils.fromFXImage(canvas.snapshot(spGIF, image), null), "gif", file);
-					break;
-				default:
-					break;
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	private void showDirectedGraph() {
-		GraphicsContext gc = canvas.getGraphicsContext2D();
-		gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-		Random random = new Random();
-		int canvasWidth = (int)canvas.getWidth();
-		int canvasHeight = (int)canvas.getHeight();
-		ArrayList<Vertex> vertices = this.graph.getVertices();
-		double beginX, beginY, endX, endY;
-		
-		gc.setTextBaseline(VPos.CENTER);
-		gc.setTextAlign(TextAlignment.CENTER);
-		for (Vertex v : vertices) {
-			if (!points.keySet().contains(v.name)) {
-				do {
-					beginX = (double)random.nextInt(canvasWidth);
-					beginY = (double)random.nextInt(canvasHeight);
-				} while (!isGoodCircleCenter(beginX, beginY));
-				double[] position = new double[2];
-				position[0] = beginX;
-				position[1] = beginY;
-				points.put(v.name, position);
-				gc.setLineWidth(1);
-				gc.setStroke(Color.BLUE);
-				gc.strokeText(v.name, beginX, beginY, radius * 2);
-				gc.setStroke(Color.BLACK);
-				gc.strokeOval(beginX - radius, beginY - radius, radius * 2, radius * 2);
-			} else {
-				beginX = points.get(v.name)[0];
-				beginY = points.get(v.name)[1];
-			}
-			for (Vertex e : v.successors) {
-				if (!points.keySet().contains(e.name)) {
-					do {
-						endX = (double)random.nextInt(canvasWidth);
-						endY = (double)random.nextInt(canvasHeight);
-					} while(!isGoodCircleCenter(endX, endY));
-					double[] position = new double[2];
-					position[0] = endX;
-					position[1] = endY;
-					points.put(e.name, position);
-					gc.setLineWidth(1);
-					gc.setStroke(Color.BLUE);
-					gc.strokeText(e.name, endX, endY, radius * 2);
-					gc.setStroke(Color.BLACK);
-					gc.strokeOval(endX - radius, endY - radius, radius * 2, radius * 2);
-				} else {
-					endX = points.get(e.name)[0];
-					endY = points.get(e.name)[1];
-				}
-				drawEdge(beginX, beginY, endX, endY, v.weights.get(e), 1, Color.GREEN);
-			}
-		}
-	}
-	
-	private boolean isGoodCircleCenter(double x, double y) {
-		if (x <= radius*2|| x >= canvas.getWidth() - radius*2|| y <= radius*2 || y >= canvas.getHeight() - radius*2) {
-			return false;
-		} else {
-			for (String point : points.keySet()) {
-				double a = points.get(point)[0];
-				double b = points.get(point)[1];
-				if (Math.pow(a - x, 2) + Math.pow(b - y, 2) <= Math.pow(radius * 2, 2)) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-	
-	private void drawEdge(double beginX, double beginY, double endX, double endY, int weight, double width, Color color) {
-		double dx = endX - beginX;
-		double dy= endY - beginY;
-		double ds = Math.sqrt(dx * dx + dy * dy);
-		double sin = dy / ds;
-		double cos = dx / ds;
-		double middleX = (beginX + endX) / 2;
-		double middleY = (beginY + endY) / 2;
-		double realBeginX = beginX + radius * cos;
-		double realBeginY = beginY + radius * sin;
-		double realEndX = endX - radius * cos;
-		double realEndY = endY - radius * sin;
-		GraphicsContext gc = canvas.getGraphicsContext2D();
-		gc.setLineWidth(width);
-		gc.setStroke(color);
-		gc.strokeLine(realBeginX, realBeginY, realEndX, realEndY);
-		gc.strokeText(String.valueOf(weight), middleX, middleY);
-		
-	    double angle = Math.atan2(dy, dx);
-	    double rdx = realEndX - realBeginX;
-	    double rdy = realEndY - realBeginY;
-	    int len = (int) Math.sqrt(rdx * rdx + rdy * rdy);
-	    Transform transform = Transform.translate(realBeginX, realBeginY);
-	    transform = transform.createConcatenation(Transform.rotate(Math.toDegrees(angle), 0, 0));
-	    gc.setTransform(new Affine(transform));
-	    gc.fillPolygon(new double[]{len, len - arrow_size, len - arrow_size, len}, new double[]{0, - arrow_size / 2, arrow_size / 2, 0}, 4);
-	    gc.setTransform(new Affine());
 	}
 }
