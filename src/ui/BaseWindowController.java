@@ -4,15 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Scanner;
-import java.util.Stack;
+import java.util.*;
 
 import javax.imageio.ImageIO;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Random;
 import java.lang.Math;
 
 import basis.DirectedGraph;
@@ -246,7 +241,18 @@ public class BaseWindowController {
 		yesBT.setOnMouseClicked(event -> {
 			String word1 = word1TF.getText();
 			String word2 = word2TF.getText();
-			String result = calcShortestPath(word1, word2);
+			String result;
+			if (!word1.equals("") && word2.equals("")) {
+				Vertex end = randomSelect(graph.getVertices());
+				result = calcShortestPath(word1, end.name);
+			} else if (word1.equals("") && !word2.equals("")) {
+				Vertex start = randomSelect(graph.getVertices());
+				result = calcShortestPath(start.name, word2);
+			} else if (word1.equals("") && word2.equals("")) {
+				result = "The two words can't be both empty!";
+			} else {
+				result = calcShortestPath(word1, word2);
+			}
 			console.setText(result);
 		});
 		stackPane.getChildren().remove(prePane);
@@ -680,7 +686,7 @@ public class BaseWindowController {
 			walkedVertices.put(v, new HashSet<>());
 		}
 		Vertex pre = vertices.get(new Random().nextInt(vertices.size()));
-		Vertex next = null;
+		Vertex next;
 		StringBuffer sb = new StringBuffer();
 		sb.append(pre.name);
 		while (true) {
@@ -698,7 +704,7 @@ public class BaseWindowController {
 		return sb.toString();
 	}
 	
-	private Vertex randomSelect(HashSet<Vertex> set) {
+	private Vertex randomSelect(Collection<Vertex> set) {
 		if (set == null || set.size() == 0) {
 			return null;
 		}
