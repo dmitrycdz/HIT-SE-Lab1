@@ -18,35 +18,32 @@ import java.lang.Math;
 import basis.DirectedGraph;
 import basis.GraphProcessor;
 import basis.Vertex;
+import javafx.beans.binding.DoubleBinding;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.VPos;
+import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
+import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
-import javafx.scene.transform.Affine;
-import javafx.scene.transform.Transform;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 
 public class BaseWindowController {
 	@FXML private MenuBar menuBar;
-	@FXML private MenuItem openMenuItem;
 	@FXML private MenuItem saveMenuItem;
-	@FXML private MenuItem closeMenuItem;
 	
 	@FXML private Button textButton;
 	@FXML private Button showButton;
@@ -54,17 +51,18 @@ public class BaseWindowController {
 	@FXML private Button generateButton;
 	@FXML private Button pathButton;
 	@FXML private Button walkButton;
-	
-	@FXML private Canvas canvas;
+
+	@FXML private ScrollPane canvasContainer;
+	@FXML private AnchorPane canvasPane;
 	@FXML private TextArea console;
 	@FXML private StackPane stackPane;
 	
 	private DirectedGraph graph;
 	private File dataFile;
 	
-	private static HashMap<String, double[]> points = new HashMap<>();
+	private static HashMap<String, PointBox> points = new HashMap<>();
+	private static HashMap<Arrow, Pair<String, String>> edges = new HashMap<>();
 	private static final double radius = 25;
-	private static final int arrow_size = 8;
 	private static Vertex[][] path;
 	private static int[][] distance;
 	private static final int infinity = Integer.MAX_VALUE / 2;
@@ -77,7 +75,7 @@ public class BaseWindowController {
 		fileChooser.setTitle("打开文件");
 		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
 		fileChooser.getExtensionFilters().addAll(
-				new FileChooser.ExtensionFilter("文本文档", "*.txt"), 
+				new FileChooser.ExtensionFilter("文本文档", "*.txt"),
 				new FileChooser.ExtensionFilter("所有文件", "*.*"));
 		File file = fileChooser.showOpenDialog(stage);
 		dataFile = file;
@@ -115,23 +113,23 @@ public class BaseWindowController {
 		if (file != null) {
 			String name = file.getName();
 			String extendName = name.substring(name.lastIndexOf('.') + 1);
-			WritableImage image = new WritableImage((int)canvas.getWidth(), (int)canvas.getHeight());
+			WritableImage image = new WritableImage((int)canvasPane.getWidth(), (int)canvasPane.getHeight());
 			try {
 				switch(extendName) {
 				case "png":
 					SnapshotParameters spPNG = new SnapshotParameters();
 				    spPNG.setFill(Color.WHITE);
-					ImageIO.write(SwingFXUtils.fromFXImage(canvas.snapshot(spPNG, image), null), "png", file);
+					ImageIO.write(SwingFXUtils.fromFXImage(canvasPane.snapshot(spPNG, image), null), "png", file);
 					break;
 				case "jpg":
 					SnapshotParameters spJPG = new SnapshotParameters();
 				    spJPG.setFill(Color.WHITE);
-					ImageIO.write(SwingFXUtils.fromFXImage(canvas.snapshot(spJPG, image), null), "jpg", file);
+					ImageIO.write(SwingFXUtils.fromFXImage(canvasPane.snapshot(spJPG, image), null), "jpg", file);
 					break;
 				case "gif":
 					SnapshotParameters spGIF = new SnapshotParameters();
 				    spGIF.setFill(Color.WHITE);
-					ImageIO.write(SwingFXUtils.fromFXImage(canvas.snapshot(spGIF, image), null), "gif", file);
+					ImageIO.write(SwingFXUtils.fromFXImage(canvasPane.snapshot(spGIF, image), null), "gif", file);
 					break;
 				default:
 					break;
@@ -167,8 +165,7 @@ public class BaseWindowController {
 			return;
 		}
 		points.clear();
-		GraphicsContext gc = canvas.getGraphicsContext2D();
-		gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+		canvasPane.getChildren().clear();
 		showDirectedGraph();
 		saveMenuItem.setDisable(false);
 	}
@@ -177,7 +174,7 @@ public class BaseWindowController {
 	protected void handleQueryButtonClicked(MouseEvent e) throws Exception {
 		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("QueryPane.fxml"));
-		GridPane pane = (GridPane)loader.load();
+		GridPane pane = loader.load();
 		TextField word1TF = (TextField)loader.getNamespace().get("word1TextField");
 		TextField word2TF = (TextField)loader.getNamespace().get("word2TextField");
 		Button returnBT = (Button)loader.getNamespace().get("returnButton");
@@ -211,7 +208,7 @@ public class BaseWindowController {
 	protected void handleGenerateButtonClicked(MouseEvent e) throws Exception {
 		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("GeneratePane.fxml"));
-		GridPane pane = (GridPane)loader.load();
+		GridPane pane = loader.load();
 		TextField inputTF = (TextField)loader.getNamespace().get("inputTextField");
 		Button returnBT = (Button)loader.getNamespace().get("returnButton");
 		Button generateBT = (Button)loader.getNamespace().get("generateButton");
@@ -237,7 +234,7 @@ public class BaseWindowController {
 		floyd();
 		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("PathPane.fxml"));
-		GridPane pane = (GridPane)loader.load();
+		GridPane pane = loader.load();
 		TextField word1TF = (TextField)loader.getNamespace().get("word1TextField");
 		TextField word2TF = (TextField)loader.getNamespace().get("word2TextField");
 		Button returnBT = (Button)loader.getNamespace().get("returnButton");
@@ -261,7 +258,7 @@ public class BaseWindowController {
 		String text = randomWalk();
 		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("WalkPane.fxml"));
-		GridPane pane = (GridPane)loader.load();
+		GridPane pane = loader.load();
 		TextArea resultTA = (TextArea)loader.getNamespace().get("resultTextArea");
 		Button returnBT = (Button)loader.getNamespace().get("returnButton");
 		Button saveBT = (Button)loader.getNamespace().get("saveButton");
@@ -274,7 +271,7 @@ public class BaseWindowController {
 			fileChooser.setTitle("保存文本");
 			fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
 			fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("文本文档", "*.txt"));
-			File file = fileChooser.showSaveDialog((Stage)menuBar.getScene().getWindow());
+			File file = fileChooser.showSaveDialog(menuBar.getScene().getWindow());
 			if (file != null) {
 				try (FileWriter writer = new FileWriter(file)) {
 					writer.write(text);
@@ -288,103 +285,240 @@ public class BaseWindowController {
 		stackPane.getChildren().remove(prePane);
 		stackPane.getChildren().add(pane);
 	}
-	
-	private void showDirectedGraph() {
-		GraphicsContext gc = canvas.getGraphicsContext2D();
-		gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-		Random random = new Random();
-		int canvasWidth = (int)canvas.getWidth();
-		int canvasHeight = (int)canvas.getHeight();
-		ArrayList<Vertex> vertices = this.graph.getVertices();
-		double beginX, beginY, endX, endY;
-		
-		gc.setTextBaseline(VPos.CENTER);
-		gc.setTextAlign(TextAlignment.CENTER);
-		for (Vertex v : vertices) {
-			if (!points.keySet().contains(v.name)) {
-				do {
-					beginX = (double)random.nextInt(canvasWidth);
-					beginY = (double)random.nextInt(canvasHeight);
-				} while (!isGoodCircleCenter(beginX, beginY));
-				double[] position = new double[2];
-				position[0] = beginX;
-				position[1] = beginY;
-				points.put(v.name, position);
-				gc.setLineWidth(1);
-				gc.setStroke(Color.BLUE);
-				gc.strokeText(v.name, beginX, beginY, radius * 2);
-				gc.setStroke(Color.BLACK);
-				gc.strokeOval(beginX - radius, beginY - radius, radius * 2, radius * 2);
-			} else {
-				beginX = points.get(v.name)[0];
-				beginY = points.get(v.name)[1];
-			}
-			for (Vertex e : v.successors) {
-				if (!points.keySet().contains(e.name)) {
-					do {
-						endX = (double)random.nextInt(canvasWidth);
-						endY = (double)random.nextInt(canvasHeight);
-					} while(!isGoodCircleCenter(endX, endY));
-					double[] position = new double[2];
-					position[0] = endX;
-					position[1] = endY;
-					points.put(e.name, position);
-					gc.setLineWidth(1);
-					gc.setStroke(Color.BLUE);
-					gc.strokeText(e.name, endX, endY, radius * 2);
-					gc.setStroke(Color.BLACK);
-					gc.strokeOval(endX - radius, endY - radius, radius * 2, radius * 2);
-				} else {
-					endX = points.get(e.name)[0];
-					endY = points.get(e.name)[1];
-				}
-				drawEdge(beginX, beginY, endX, endY, v.weights.get(e), 1, Color.GREEN);
-			}
+
+	@FXML
+	protected void handleCanvasPaneClicked(MouseEvent e) throws Exception {
+		if (e.getClickCount() == 2) {
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("ImageWindow.fxml"));
+			StackPane root = loader.load();
+			root.getChildren().clear();
+			root.getChildren().add(canvasPane);
+			Stage stage = new Stage();
+			stage.setScene(new Scene(root));
+			stage.setTitle("查看大图");
+			stage.show();
+			stage.setOnCloseRequest(event -> {
+				canvasContainer.setContent(null);
+				canvasContainer.setContent(canvasPane);
+			});
 		}
 	}
 	
+	private void showDirectedGraph() {
+		points.clear();
+		edges.clear();
+		canvasPane.getChildren().clear();
+
+		ArrayList<Vertex> vertices = this.graph.getVertices();
+		String startName, endName;
+
+		for (Vertex v : vertices) {
+			PointBox start;
+			if (!points.keySet().contains(v.name)) {
+				PointBox box = addPoint(v.name);
+				start = box;
+			} else {
+				start = points.get(v.name);
+			}
+			startName = v.name;
+			for (Vertex e : v.successors) {
+				PointBox end;
+				if (!points.keySet().contains(e.name)) {
+					PointBox box = addPoint(e.name);
+					end = box;
+				} else {
+					end = points.get(e.name);
+				}
+				endName = e.name;
+				if (start == null) {
+					System.out.println("start");
+				}
+				if (end == null) {
+					System.out.println("end");
+				}
+
+				double dx = end.getCenterX() - start.getCenterX();
+				double dy= end.getCenterY() - start.getCenterY();
+				double ds = Math.sqrt(dx * dx + dy * dy);
+				Line line = new Line();
+				line.setStroke(Color.GREEN);
+				line.setStartX(start.getCenterX() + radius * dx / ds);
+				line.setStartY(start.getCenterY() + radius * dy / ds);
+				line.setEndX(end.getCenterX() - radius * dx / ds);
+				line.setEndY(end.getCenterY() - radius * dy / ds);
+				line.startXProperty().bind(
+					new DoubleBinding() {
+						{
+							super.bind(start.centerXProperty(), start.centerYProperty(), end.centerXProperty(), end.centerYProperty());
+						}
+						@Override
+						protected double computeValue() {
+							DoubleBinding x = end.centerXProperty().subtract(start.centerXProperty());
+							DoubleBinding y = end.centerYProperty().subtract(start.centerYProperty());
+							DoubleBinding s = new DoubleBinding() {
+								{
+									super.bind(x, y);
+								}
+								@Override
+								protected double computeValue() {
+									return Math.sqrt(Math.pow(x.get(), 2) + Math.pow(y.get(), 2));
+								}
+							};
+							return start.centerXProperty().add(x.divide(s).multiply(radius)).get();
+						}
+					}
+				);
+				line.startYProperty().bind(
+					new DoubleBinding() {
+						{
+							super.bind(start.centerXProperty(), start.centerYProperty(), end.centerXProperty(), end.centerYProperty());
+						}
+						@Override
+						protected double computeValue() {
+							DoubleBinding x = end.centerXProperty().subtract(start.centerXProperty());
+							DoubleBinding y = end.centerYProperty().subtract(start.centerYProperty());
+							DoubleBinding s = new DoubleBinding() {
+								{
+									super.bind(x, y);
+								}
+								@Override
+								protected double computeValue() {
+									return Math.sqrt(Math.pow(x.get(), 2) + Math.pow(y.get(), 2));
+								}
+							};
+							return start.centerYProperty().add(y.divide(s).multiply(radius)).get();
+						}
+					}
+				);
+				line.endXProperty().bind(
+					new DoubleBinding() {
+						{
+							super.bind(start.centerXProperty(), start.centerYProperty(), end.centerXProperty(), end.centerYProperty());
+						}
+						@Override
+						protected double computeValue() {
+							DoubleBinding x = end.centerXProperty().subtract(start.centerXProperty());
+							DoubleBinding y = end.centerYProperty().subtract(start.centerYProperty());
+							DoubleBinding s = new DoubleBinding() {
+								{
+									super.bind(x, y);
+								}
+								@Override
+								protected double computeValue() {
+									return Math.sqrt(Math.pow(x.get(), 2) + Math.pow(y.get(), 2));
+								}
+							};
+							return end.centerXProperty().subtract(x.divide(s).multiply(radius)).get();
+						}
+					}
+				);
+				line.endYProperty().bind(
+					new DoubleBinding() {
+						{
+							super.bind(start.centerXProperty(), start.centerYProperty(), end.centerXProperty(), end.centerYProperty());
+						}
+						@Override
+						protected double computeValue() {
+							DoubleBinding x = end.centerXProperty().subtract(start.centerXProperty());
+							DoubleBinding y = end.centerYProperty().subtract(start.centerYProperty());
+							DoubleBinding s = new DoubleBinding() {
+								{
+									super.bind(x, y);
+								}
+								@Override
+								protected double computeValue() {
+									return Math.sqrt(Math.pow(x.get(), 2) + Math.pow(y.get(), 2));
+								}
+							};
+							return end.centerYProperty().subtract(y.divide(s).multiply(radius)).get();
+						}
+					}
+				);
+				Arrow edge = new Arrow(line, v.weights.get(e));
+				edges.put(edge, new Pair<>(startName, endName));
+			}
+		}
+		canvasPane.getChildren().addAll(points.values());
+		canvasPane.getChildren().addAll(edges.keySet());
+	}
+
+	private PointBox addPoint(String name) {
+		Random random = new Random();
+		int canvasWidth = (int)canvasPane.getWidth();
+		int canvasHeight = (int)canvasPane.getHeight();
+		double x, y;
+
+		do {
+			x = (double)random.nextInt(canvasWidth);
+			y = (double)random.nextInt(canvasHeight);
+		} while(!isGoodCircleCenter(x, y));
+
+		PointBox box = new PointBox();
+		box.setLayoutX(x - radius);
+		box.setLayoutY(y - radius);
+		box.setPrefSize(radius * 2, radius * 2);
+		box.setStyle("-fx-background-color: transparent");
+
+		Circle circle = new Circle();
+		circle.setRadius(radius);
+		circle.setFill(Color.PINK);
+		circle.setMouseTransparent(true);
+
+		Text text = new Text(name);
+		text.setWrappingWidth(radius * 2);
+		text.setFill(Color.BLUE);
+		text.setTextAlignment(TextAlignment.CENTER);
+		text.setTextOrigin(VPos.CENTER);
+		text.setMouseTransparent(true);
+
+		box.getChildren().addAll(circle, text);
+		box.setOnMouseEntered(event -> {
+			box.getCircle().setFill(Color.YELLOW);
+		});
+		box.setOnMouseExited(event -> {
+			box.getCircle().setFill(Color.PINK);
+		});
+		box.setOnMouseDragged(event -> {
+			double eventX = event.getX() + box.getLayoutX();
+			double eventY = event.getY() + box.getLayoutY();
+			if (eventX - radius < 0) {
+				box.setLayoutX(0);
+			} else if (eventX + radius > canvasPane.getWidth()) {
+				box.setLayoutX(canvasPane.getWidth() - radius * 2);
+			} else {
+				box.setLayoutX(eventX - radius);
+			}
+			if (eventY - radius < 0) {
+				box.setLayoutY(0);
+			} else if (eventY + radius > canvasPane.getHeight()) {
+				box.setLayoutY(canvasPane.getHeight() - radius * 2);
+			} else {
+				box.setLayoutY(eventY - radius);
+			}
+		});
+		box.setOnMousePressed(event -> {
+			box.getCircle().setFill(Color.RED);
+		});
+		box.setOnMouseReleased(event -> {
+			box.getCircle().setFill(Color.YELLOW);
+		});
+		points.put(name, box);
+		return box;
+	}
+	
 	private boolean isGoodCircleCenter(double x, double y) {
-		if (x <= radius*2|| x >= canvas.getWidth() - radius*2|| y <= radius*2 || y >= canvas.getHeight() - radius*2) {
+		if (x <= radius*2 || x >= canvasPane.getWidth() - radius*2 || y <= radius*2 || y >= canvasPane.getHeight() - radius*2) {
 			return false;
 		} else {
 			for (String point : points.keySet()) {
-				double a = points.get(point)[0];
-				double b = points.get(point)[1];
+				double a = points.get(point).getCenterX();
+				double b = points.get(point).getCenterY();
 				if (Math.pow(a - x, 2) + Math.pow(b - y, 2) <= Math.pow(radius * 2, 2)) {
 					return false;
 				}
 			}
 		}
 		return true;
-	}
-	
-	private void drawEdge(double beginX, double beginY, double endX, double endY, int weight, double width, Color color) {
-		double dx = endX - beginX;
-		double dy= endY - beginY;
-		double ds = Math.sqrt(dx * dx + dy * dy);
-		double sin = dy / ds;
-		double cos = dx / ds;
-		double middleX = (beginX + endX) / 2;
-		double middleY = (beginY + endY) / 2;
-		double realBeginX = beginX + radius * cos;
-		double realBeginY = beginY + radius * sin;
-		double realEndX = endX - radius * cos;
-		double realEndY = endY - radius * sin;
-		GraphicsContext gc = canvas.getGraphicsContext2D();
-		gc.setLineWidth(width);
-		gc.setStroke(color);
-		gc.strokeLine(realBeginX, realBeginY, realEndX, realEndY);
-		gc.strokeText(String.valueOf(weight), middleX, middleY);
-		
-	    double angle = Math.atan2(dy, dx);
-	    double rdx = realEndX - realBeginX;
-	    double rdy = realEndY - realBeginY;
-	    int len = (int) Math.sqrt(rdx * rdx + rdy * rdy);
-	    Transform transform = Transform.translate(realBeginX, realBeginY);
-	    transform = transform.createConcatenation(Transform.rotate(Math.toDegrees(angle), 0, 0));
-	    gc.setTransform(new Affine(transform));
-	    gc.fillPolygon(new double[]{len, len - arrow_size, len - arrow_size, len}, new double[]{0, - arrow_size / 2, arrow_size / 2, 0}, 4);
-	    gc.setTransform(new Affine());
 	}
 	
 	private String queryBridgeWords(String word1, String word2) {
@@ -418,7 +552,7 @@ public class BaseWindowController {
 		String pre, post;
 		Scanner scan = new Scanner(inputText);
 		StringBuffer sb = new StringBuffer(inputText);
-		HashSet<Vertex> bridgeWords = new HashSet<>();
+		HashSet<Vertex> bridgeWords;
 		int fromIndex = 0;
 		do {
 			pre = GraphProcessor.parseText(scan.next());
@@ -463,25 +597,25 @@ public class BaseWindowController {
 		return (intersection.size() == 0)? null : intersection;
 	}
 	
-	private String calcShortestPath(String beginName, String endName) {
+	private String calcShortestPath(String startName, String endName) {
 		ArrayList<Vertex> vertices = this.graph.getVertices();
-		Vertex beginVertex = null;
+		Vertex startVertex = null;
 		Vertex endVertex = null;
 		for (Vertex v : vertices) {
-			if (v.name.equals(beginName) ) {
-				beginVertex = v;
+			if (v.name.equals(startName) ) {
+				startVertex = v;
 			}
 			if (v.name.equals(endName)) {
 				endVertex = v;
 			}
 		}
-		if (beginVertex == null || endVertex == null) {
-			return "No " + beginName + " or " + endName + " in the graph!";
+		if (startVertex == null || endVertex == null) {
+			return "No " + startName + " or " + endName + " in the graph!";
 		}
-		int i = vertices.indexOf(beginVertex);
+		int i = vertices.indexOf(startVertex);
 		int j = vertices.indexOf(endVertex);
 		if (distance[i][j] == infinity) {
-			return "No path from " + beginName + " to " + endName + "!";
+			return "No path from " + startName + " to " + endName + "!";
 		}
 		Vertex post = endVertex;
 		Vertex pre = null;
@@ -491,7 +625,7 @@ public class BaseWindowController {
 			int k = vertices.indexOf(post);
 			post = path[i][k];
 		}
-		ps.push(beginVertex);
+		ps.push(startVertex);
 		
 		pre = ps.pop();
 		while (!ps.isEmpty()) {
@@ -505,8 +639,8 @@ public class BaseWindowController {
 	private void floyd() {
 		int vNum = graph.getVertexNumber();
 		ArrayList<Vertex> vertices = graph.getVertices();
-		HashSet<Vertex> successors = null;
-		HashMap<Vertex, Integer> weights = null;
+		HashSet<Vertex> successors;
+		HashMap<Vertex, Integer> weights;
 		path = new Vertex[vNum][vNum];
 		distance = new int[vNum][vNum];
 		for (int i = 0; i < vNum; ++i) {
@@ -529,13 +663,14 @@ public class BaseWindowController {
 		}
 	}
 	
-	private void showPath(Vertex begin, Vertex end) {
-		double beginX = points.get(begin.name)[0];
-		double beginY = points.get(begin.name)[1];
-		double endX = points.get(end.name)[0];
-		double endY = points.get(end.name)[1];
-		int weight = begin.weights.get(end);
-		drawEdge(beginX, beginY, endX, endY, weight, 2, Color.RED);
+	private void showPath(Vertex start, Vertex end) {
+		for (Arrow edge : edges.keySet()) {
+			if (edges.get(edge).getKey().equals(start.name) && edges.get(edge).getValue().equals(end.name)) {
+				edge.setStroke(Color.RED);
+				edge.setStrokeWidth(2);
+				return;
+			}
+		}
 	}
 	
 	private String randomWalk() {
