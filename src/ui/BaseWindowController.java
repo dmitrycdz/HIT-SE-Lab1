@@ -58,8 +58,8 @@ public class BaseWindowController {
 	private static HashMap<String, PointBox> points = new HashMap<>();
 	private static HashMap<Arrow, Pair<String, String>> edges = new HashMap<>();
 	private static final double radius = 25;
-	private static Vertex[][] path;
-	private static int[][] distance;
+
+	private static int[] distance;
 	private static final int infinity = Integer.MAX_VALUE / 2;
 	
 	@FXML
@@ -226,7 +226,6 @@ public class BaseWindowController {
 	
 	@FXML
 	protected void handlePathButtonClicked(MouseEvent e) throws Exception {
-		floyd();
 		GridPane prePane = (GridPane)stackPane.getChildren().get(0);
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("PathPane.fxml"));
 		GridPane pane = loader.load();
@@ -237,6 +236,10 @@ public class BaseWindowController {
 		returnBT.setOnMouseClicked(event -> {
 			stackPane.getChildren().remove(pane);
 			stackPane.getChildren().add(prePane);
+			for (Arrow edge : edges.keySet()) {
+				edge.setStroke(Color.GREEN);
+				edge.setStrokeWidth(1);
+			}
 		});
 		yesBT.setOnMouseClicked(event -> {
 			String word1 = word1TF.getText();
@@ -478,12 +481,8 @@ public class BaseWindowController {
 		text.setMouseTransparent(true);
 
 		box.getChildren().addAll(circle, text);
-		box.setOnMouseEntered(event -> {
-			box.getCircle().setFill(Color.YELLOW);
-		});
-		box.setOnMouseExited(event -> {
-			box.getCircle().setFill(Color.PINK);
-		});
+		box.setOnMouseEntered(event -> box.getCircle().setFill(Color.YELLOW));
+		box.setOnMouseExited(event -> box.getCircle().setFill(Color.PINK));
 		box.setOnMouseDragged(event -> {
 			double eventX = event.getX() + box.getLayoutX();
 			double eventY = event.getY() + box.getLayoutY();
@@ -502,12 +501,8 @@ public class BaseWindowController {
 				box.setLayoutY(eventY - radius);
 			}
 		});
-		box.setOnMousePressed(event -> {
-			box.getCircle().setFill(Color.RED);
-		});
-		box.setOnMouseReleased(event -> {
-			box.getCircle().setFill(Color.YELLOW);
-		});
+		box.setOnMousePressed(event -> box.getCircle().setFill(Color.RED));
+		box.setOnMouseReleased(event -> box.getCircle().setFill(Color.YELLOW));
 		points.put(name, box);
 		return box;
 	}
@@ -618,62 +613,104 @@ public class BaseWindowController {
 		if (startVertex == null || endVertex == null) {
 			return "No " + startName + " or " + endName + " in the graph!";
 		}
+		HashMap<Vertex, HashSet<Vertex>> path = dijkstra(endVertex);
 		int i = vertices.indexOf(startVertex);
-		int j = vertices.indexOf(endVertex);
-		if (distance[i][j] == infinity) {
+		if (distance[i] == infinity) {
 			return "No path from " + startName + " to " + endName + "!";
 		}
-		Vertex post = endVertex;
-		Vertex pre = null;
-		Stack<Vertex> ps = new Stack<>();
-		while (post != null) {
-			ps.push(post);
-			int k = vertices.indexOf(post);
-			post = path[i][k];
-		}
-		ps.push(startVertex);
-		
-		pre = ps.pop();
-		while (!ps.isEmpty()) {
-			post = ps.pop();
-			showPath(pre, post);
-			pre = post;
-		}
-		return "The length of the shortest path is " + distance[i][j];
+		showPath(startVertex, endVertex, path);
+		return "The length of the shortest path is " + distance[i];
 	}
-	
-	private void floyd() {
-		int vNum = graph.getVertexNumber();
-		ArrayList<Vertex> vertices = graph.getVertices();
-		HashSet<Vertex> successors;
-		HashMap<Vertex, Integer> weights;
-		path = new Vertex[vNum][vNum];
-		distance = new int[vNum][vNum];
-		for (int i = 0; i < vNum; ++i) {
-			for (int j = 0; j < vNum; ++j) {
-				successors = vertices.get(i).successors;
-				weights = vertices.get(i).weights;
-				path[i][j] = null;
-				distance[i][j] = successors.contains(vertices.get(j)) ? weights.get(vertices.get(j)) : infinity;
-			}
+
+	private HashMap<Vertex, HashSet<Vertex>> dijkstra(Vertex end) {
+		boolean[] known = new boolean[graph.getVertexNumber()];
+		distance = new int[graph.getVertexNumber()];
+		HashMap<Vertex, HashSet<Vertex>> path = new HashMap<>();
+		Arrays.fill(known, false);
+		Arrays.fill(distance, infinity);
+		ArrayList<Vertex> vertices = this.graph.getVertices();
+		for (Vertex n : vertices) {
+			path.put(n, new HashSet<>());
 		}
-		for (int k = 0; k < vNum; ++k) {
-			for (int i = 0; i < vNum; ++i) {
-				for (int j = 0; j < vNum; ++j) {
-					if (distance[i][k] + distance[k][j] < distance[i][j]) {
-						distance[i][j] = distance[i][k] + distance[k][j];
-						path[i][j] = vertices.get(k);
-					}
+		distance[vertices.indexOf(end)] = 0;
+		Vertex b = end;
+		ArrayList<Vertex> set = new ArrayList<>();
+		while (true) {
+			if (b == null) {
+				break;
+			}
+			known[vertices.indexOf(b)] = true;
+			set.remove(b);
+			for (Vertex a : b.predecessors) {
+				if (!known[vertices.indexOf(a)] && distance[vertices.indexOf(b)] + a.weights.get(b) <= distance[vertices.indexOf(a)]) {
+					distance[vertices.indexOf(a)] = distance[vertices.indexOf(b)] + a.weights.get(b);
+					path.get(a).add(b);
+					set.add(a);
 				}
 			}
+			if (set.isEmpty()) {
+				b = null;
+			} else {
+				Vertex min = set.get(0);
+				for (Vertex n : set) {
+					if (distance[vertices.indexOf(n)] < distance[vertices.indexOf(min)]) {
+						min = n;
+					}
+				}
+				b = min;
+			}
+		}
+		return path;
+	}
+
+	private void showPath(Vertex start, Vertex end, HashMap<Vertex, HashSet<Vertex>> path) {
+		HashMap<Vertex, Boolean> visited = new HashMap<>();
+		for (Vertex n : path.keySet()) {
+			visited.put(n, false);
+		}
+		visited.replace(start, true);
+		Stack<Vertex> stack = new Stack<>();
+		Stack<Vertex> branch = new Stack<>();
+		Vertex a = start;
+		Vertex b;
+		if (path.get(a).size() > 1) {
+			branch.push(a);
+		}
+		for (Vertex v : path.get(a)) {
+			stack.push(v);
+		}
+		Random rand = new Random();
+		Color color = Color.rgb(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
+		while (!stack.empty()) {
+			b = stack.pop();
+			if (b == end || visited.get(b)) {
+				visited.replace(b, true);
+				if (!branch.empty()) {
+					a = branch.pop();
+				}
+				continue;
+			}
+			showEdge(a, b, color);
+			visited.replace(b, true);
+			if (path.get(b).size() > 1) {
+				branch.push(b);
+			}
+			for (Vertex v : path.get(b)) {
+				if (v == end || visited.get(v)) {
+					showEdge(b, v, color);
+					color = Color.rgb(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
+				}
+				stack.push(v);
+			}
+			a = b;
 		}
 	}
 	
-	private void showPath(Vertex start, Vertex end) {
+	private void showEdge(Vertex start, Vertex end, Color color) {
 		for (Arrow edge : edges.keySet()) {
 			if (edges.get(edge).getKey().equals(start.name) && edges.get(edge).getValue().equals(end.name)) {
-				edge.setStroke(Color.RED);
-				edge.setStrokeWidth(2);
+				edge.setStroke(color);
+				edge.setStrokeWidth(3);
 				return;
 			}
 		}
