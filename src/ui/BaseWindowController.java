@@ -642,8 +642,12 @@ public class BaseWindowController {
 			known[vertices.indexOf(b)] = true;
 			set.remove(b);
 			for (Vertex a : b.predecessors) {
-				if (!known[vertices.indexOf(a)] && distance[vertices.indexOf(b)] + a.weights.get(b) <= distance[vertices.indexOf(a)]) {
+				if (!known[vertices.indexOf(a)] && distance[vertices.indexOf(b)] + a.weights.get(b) < distance[vertices.indexOf(a)]) {
 					distance[vertices.indexOf(a)] = distance[vertices.indexOf(b)] + a.weights.get(b);
+					path.get(a).clear();
+					path.get(a).add(b);
+					set.add(a);
+				} else if (!known[vertices.indexOf(a)] && distance[vertices.indexOf(b)] + a.weights.get(b) == distance[vertices.indexOf(a)]) {
 					path.get(a).add(b);
 					set.add(a);
 				}
