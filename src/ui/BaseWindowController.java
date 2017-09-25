@@ -665,9 +665,10 @@ public class BaseWindowController {
 			} else {
 				sb.append("and " + v.name + ".");
 			}
+			++count;
 		}
 		//返回查询结果
-		return "The bridge words from word1 to word2 are: " + sb.toString();
+		return "The bridge words from \"" + word1  + "\" to \"" + word2 + "\" are: " + sb.toString();
 	}
 
 	/**
