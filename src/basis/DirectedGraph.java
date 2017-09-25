@@ -2,8 +2,14 @@ package basis;
 
 import java.util.ArrayList;
 
+/**
+ * 有向图类
+ * @author YSJ
+ * @version 1.0.0
+ * @date 2017-09-15
+ */
 public class DirectedGraph {
-	private ArrayList<Vertex> vertices;
+	private ArrayList<Vertex> vertices;		//顶点表
 	
 	public DirectedGraph() {
 		this.vertices = new ArrayList<>();
@@ -24,7 +30,11 @@ public class DirectedGraph {
 		}
 		return number;
 	}
-	
+
+	/**
+	 *
+	 * @param name 向有向图中添加的节点名称
+	 */
 	public void addVertex(String name) {
 		for (Vertex v : vertices) {
 			if (v.name.equals(name)) {
@@ -33,7 +43,12 @@ public class DirectedGraph {
 		}
 		vertices.add(new Vertex(name));
 	}
-	
+
+	/**
+	 *
+	 * @param head 向有向图中添加的边的起点名称
+	 * @param tail 向有向图中添加的边的终点名称
+	 */
 	public void addEdge(String head, String tail) {
 		Vertex a = new Vertex();
 		Vertex b = new Vertex();

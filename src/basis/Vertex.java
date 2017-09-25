@@ -3,6 +3,12 @@ package basis;
 import java.util.HashMap;
 import java.util.HashSet;
 
+/**
+ * 有向图结点类
+ * @author YSJ
+ * @version 1.0.0
+ * @date 2017-09-15
+ */
 public class Vertex {
 	public String name;
 	public HashSet<Vertex> predecessors;

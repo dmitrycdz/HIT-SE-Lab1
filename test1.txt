@@ -1,0 +1,16 @@
+In this tutorial, we’ll assume that Scrapy is already installed on your system. If that’s not the case, see Installation guide.
+
+We are going to scrape quotes.toscrape.com, a website that lists quotes from famous authors.
+
+This tutorial will walk you through these tasks:
+
+Creating a new Scrapy project
+Writing a spider to crawl a site and extract data
+Exporting the scraped data using the command line
+Changing spider to recursively follow links
+Using spider arguments
+Scrapy is written in Python. If you’re new to the language you might want to start by getting an idea of what the language is like, to get the most out of Scrapy.
+
+If you’re already familiar with other languages, and want to learn Python quickly, we recommend reading through Dive Into Python 3. Alternatively, you can follow the Python Tutorial.
+
+If you’re new to programming and want to start with Python, you may find useful the online book Learn Python The Hard Way. You can also take a look at this list of Python resources for non-programmers.
