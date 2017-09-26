@@ -424,6 +424,7 @@ public class BaseWindowController {
 				line.setStartY(start.getCenterY() + radius * dy / ds);
 				line.setEndX(end.getCenterX() - radius * dx / ds);
 				line.setEndY(end.getCenterY() - radius * dy / ds);
+				line.setMouseTransparent(true);
 				//将直线的各位置属性与绘图起点、绘图终点的位置属性绑定，以便在拖动顶点时直线随之移动
 				line.startXProperty().bind(
 					new DoubleBinding() {
@@ -827,30 +828,27 @@ public class BaseWindowController {
 	 * @param path 最短路径子图
 	 */
 	private void showPath(Vertex start, Vertex end, HashMap<Vertex, HashSet<Vertex>> path) {
-		HashMap<Vertex, Boolean> visited = new HashMap<>();	//用于记录结点是否被访问
+		HashMap<Vertex, Boolean> visited = new HashMap<>();
 		for (Vertex n : path.keySet()) {
 			visited.put(n, false);
 		}
 		visited.replace(start, true);
-		Stack<Vertex> stack = new Stack<>();	//栈1，用于保存DFS结点
-		Stack<Vertex> branch = new Stack<>();	//栈2，用于保存最短路径中分叉的结点（即有多个后继结点，对应多条最短路径）
-		Vertex a = start;	//结点a用于记录一条有向边的起点，初始化为最短路径的起点
-		Vertex b;			//结点b用于记录一条有向边的终点
-		//判断起点是否分叉
+		Stack<Vertex> stack = new Stack<>();
+		Stack<Vertex> branch = new Stack<>();
+		Vertex a = start;
+		Vertex b;
 		if (path.get(a).size() > 1) {
-			branch.push(a);
+			for (int i = 0; i < path.get(a).size() - 1; ++i) {
+				branch.push(a);
+			}
 		}
-		//起点入栈，用于DFS
 		for (Vertex v : path.get(a)) {
 			stack.push(v);
 		}
-		//初始化一种随机颜色用于路径的标注
 		Random rand = new Random();
 		Color color = Color.rgb(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
-		//DFS最短路径子图
 		while (!stack.empty()) {
-			b = stack.pop();	//当前结点出栈
-			//若当前结点是终点或者当前结点已被访问过（从分支路径回到主路径），则将有向边起点a设为一个分支节点，从而遍历分支路径
+			b = stack.pop();
 			if (b == end || visited.get(b)) {
 				visited.replace(b, true);
 				if (!branch.empty()) {
@@ -858,23 +856,21 @@ public class BaseWindowController {
 				}
 				continue;
 			}
-			showEdge(a, b, color);		//在绘图面板上标注当前有向边
-			visited.replace(b, true);	//将当前结点设置为已被访问
-			//若在最短路径子图path中，当前结点的后继不止一个，则将当前结点加入分支结点栈中
+			showEdge(a, b, color);
+			visited.replace(b, true);
 			if (path.get(b).size() > 1) {
-				branch.push(b);
+				for (int i = 0; i < path.get(b).size() - 1; ++i) {
+					branch.push(b);
+				}
 			}
-			//遍历当前结点b在最短路径子图中的后继结点
 			for (Vertex v : path.get(b)) {
-				//若后继结点v是终点或者v已被访问过（v是分支路径与主路径的交点），则直接展示有向边(b,v)，随后产生一种新的随机颜色
 				if (v == end || visited.get(v)) {
 					showEdge(b, v, color);
 					color = Color.rgb(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
 				}
-				//结点v入栈
 				stack.push(v);
 			}
-			a = b;	//将有向边起点设置为当前结点b
+			a = b;
 		}
 	}
 	
