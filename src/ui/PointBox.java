@@ -8,7 +8,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 
 /**
- * 绘图面板上的顶点显示类，继承StackPane类目的是使顶点中的文本自动居中
+ * 绘图面板上的顶点显示类，继承StackPane类的目的是使顶点中的文本自动居中
  * @author XJL
  * @version 1.1.0
  * @date 2017-09-19
