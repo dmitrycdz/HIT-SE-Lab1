@@ -19,6 +19,7 @@ public class MainApplication extends Application {
 	public void start(Stage stage) throws Exception {
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("BaseWindow.fxml"));
 		Parent root = loader.load();
+		
 		//获取主窗口上的控件对象
 		MenuItem saveMI = (MenuItem)loader.getNamespace().get("saveMenuItem");
 		Button textBT = (Button)loader.getNamespace().get("textButton");
@@ -27,6 +28,7 @@ public class MainApplication extends Application {
 		Button generateBT = (Button)loader.getNamespace().get("generateButton");
 		Button pathBT = (Button)loader.getNamespace().get("pathButton");
 		Button walkBT = (Button)loader.getNamespace().get("walkButton");
+		
 		//将暂时不可用的控件设置为不可用
 		saveMI.setDisable(true);
 		textBT.setDisable(true);
