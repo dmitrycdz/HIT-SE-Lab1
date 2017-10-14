@@ -28,6 +28,7 @@ public class MainApplication extends Application {
 		Button generateBT = (Button)loader.getNamespace().get("generateButton");
 		Button pathBT = (Button)loader.getNamespace().get("pathButton");
 		Button walkBT = (Button)loader.getNamespace().get("walkButton");
+		
 		//将暂时不可用的控件设置为不可用
 		saveMI.setDisable(true);
 		textBT.setDisable(true);
