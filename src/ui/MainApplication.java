@@ -19,6 +19,7 @@ public class MainApplication extends Application {
 	public void start(Stage stage) throws Exception {
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("BaseWindow.fxml"));
 		Parent root = loader.load();
+		
 		//获取主窗口上的控件对象
 		MenuItem saveMI = (MenuItem)loader.getNamespace().get("saveMenuItem");
 		Button textBT = (Button)loader.getNamespace().get("textButton");

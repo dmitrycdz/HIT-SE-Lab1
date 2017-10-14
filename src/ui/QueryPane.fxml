@@ -36,3 +36,4 @@
       <Button fx:id="queryButton" mnemonicParsing="false" prefWidth="100.0" text="查询" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
    </children>
 </GridPane>
+  
