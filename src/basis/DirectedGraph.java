@@ -9,7 +9,7 @@ import java.util.ArrayList;
  * @date 2017-09-15
  */
 public class DirectedGraph {
-	private ArrayList<Vertex> vertices;		//顶点表
+	private ArrayList<Vertex> vertices;	//顶点表
 	
 	public DirectedGraph() {
 		this.vertices = new ArrayList<>();
